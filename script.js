@@ -1,7 +1,4 @@
 const ctx = document.getElementById("canvas").getContext("2d");
-const background = new Image();
-background.src = "background.png";
-
 const healthText = document.getElementById("healthText");
 
 const player = {
@@ -33,14 +30,32 @@ const enemy = {
 enemy.img.src = "Enemy.png";
 
 const size = document.getElementById("canvas").width;
-const tiles = 5;
-const lineWidth = size / tiles / 10;
 const slashCooldown = 3000;
+let tiles;
+let lineWidth;
 let key;
 let enemyWannaMove = false;
 
-setInterval(update, 50);
-setInterval(enemyInterval, 250);
+function setTiles(amount) {
+    tiles = amount;
+    lineWidth = size / tiles / 10;
+}
+
+setTiles(5);
+
+setInterval(() => {
+    if (player.health > 0) {
+        update();
+    } else {
+        // uoi dead
+    }
+    
+    if (enemy.health === 0) {
+        setTiles(tiles + 1);
+        enemy.health = 5;
+    }
+}, 50);
+setInterval(enemyInterval, 500);
 function enemyInterval() {
     enemyWannaMove = true;
 }
@@ -52,14 +67,14 @@ function drawBackground(tiles) {
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = lineWidth;
 
-    for (let x = 0; x <= size; x += size / tiles) {
+    for (let x = -0.000006769420; x <= size; x += size / tiles) {
         ctx.beginPath()
         ctx.moveTo(x, 0);
         ctx.lineTo(x, size);
         ctx.stroke();
     }
 
-    for (let y = 0; y <= size; y += size / tiles) {
+    for (let y = -0.000006769420; y <= size; y += size / tiles) {
         ctx.beginPath()
         ctx.moveTo(0, y);
         ctx.lineTo(size, y);
@@ -82,14 +97,15 @@ function update() {
     }
     borderlimit(player);
     borderlimit(enemy);
-    if (player.wannaSlash) {
+    console.log(Date.now() - player.lastSlashTime >= slashCooldown)
+    if (player.wannaSlash && player.slashing) {
         if (player.oldX !== player.x && player.y === enemy.y) {
             collision(enemy, enemy.x, player.oldX, player.x);
         } else if (player.oldY !== player.y && player.x === enemy.x) {
             collision(enemy, enemy.y, player.oldY, player.y);
         }
     }
-    if (enemy.wannaSlash) {
+    if (enemy.wannaSlash && enemy.slashing) {
         if (enemy.oldX !== enemy.x && enemy.y === player.y) {
             collision(player, player.x, enemy.oldX, enemy.x);
         } else if (enemy.oldY !== enemy.y && enemy.x === player.x) {
@@ -114,9 +130,16 @@ function update() {
 }
 
 function moveEntity(entity, direction) {
+    entity.slashing = false;
     let doSlash = entity.wannaSlash;
-    if (Date.now() - entity.lastSlashTime < slashCooldown) doSlash = false;
-    else entity.lastSlashTime = Date.now();
+    if (doSlash) {
+        if (Date.now() - entity.lastSlashTime < slashCooldown) doSlash = false;
+        else {
+            entity.lastSlashTime = Date.now();
+            entity.slashing = true;
+        }
+    }
+
     if (direction == "w") {
         if (doSlash) {
             entity.y -= 999;
